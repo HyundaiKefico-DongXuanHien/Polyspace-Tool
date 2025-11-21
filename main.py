@@ -1,39 +1,20 @@
-import subprocess
+# ============================================================================
+# FILE NAME     : version5.py
+# AUTHOR        : DONG XUAN HIEN
+# DIVISION      : HYUNDAI KEFICO Co.,Ltd.
+# DESCRIPTION   : Tool automation Polyspace
+# HISTORY       : 20/11/2025
+# ============================================================================
+
 import os
 import time
-import datetime
 import pyautogui
 import pyperclip
-import shutil
-import tkinter as tk
-from tkinter import messagebox
-from tkinter.scrolledtext import ScrolledText
 import threading
-import traceback
-import pandas as pd
-from datetime import datetime
-import atexit
-import psutil
 import keyboard
-import sys
-
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.action_chains import ActionChains
-import re
-
-import csv
-import xml.etree.ElementTree as ET
-
-import openpyxl
 from charset_normalizer import from_path
-import string
 
-#-----------------------------------H I E R A C H Y-----------------------------------------------
+#----------------------------------- H I E R A C H Y -----------------------------------------------
 
 data_hierarchy = {
     "Defect": {
@@ -310,44 +291,32 @@ data_hierarchy = {
 }
 
 status_hierarchy = {
-    "Unreviewed": 26,
-    "To investigate": 49,
-    "To fix": 71,
-    "Justified": 94,
-    "No action planned": 118,
-    "Not a defect": 141,
-    "Other": 163,
+    "Unreviewed": 0,
+    "To investigate": 1,
+    "To fix": 2,
+    "Justified": 3,
+    "No action planned": 4,
+    "Not a defect": 5,
+    "Other": 6,
     }
     
 severity_hierarchy = {
-    "Unset": 23,
-    "High": 50,
-    "Medium": 72,
-    "Low": 95,
+    "Unset": 0,
+    "High": 1,
+    "Medium": 2,
+    "Low": 3,
     }    
 
 P_status = (1525, 190)   #(3198, 157)
 P_severity = (1527, 225) #(3201,188)
 P_comment = (1736, 194) # (3351, 158)
 
-P13 = (0, 0)
+P = (825, 132)
 
+level1_compare = ""
 level2_compare = ""
 
 stop_flag = False
-
-# Bản đồ chuyển ký tự đặc biệt cần Shift
-shift_char_map = {
-    '"': '\'', '<': ',', '>': '.', '~': '`', ')': '0', '(': '9',
-    '!': '1', '@': '2', '#': '3', '$': '4',
-    '%': '5', '^': '6', '&': '7', '*': '8',
-    'A': 'a', 'B': 'b', 'C': 'c', 'D': 'd', 'E': 'e',
-    'F': 'f', 'G': 'g', 'H': 'h', 'I': 'i', 'J': 'j',
-    'K': 'k', 'L': 'l', 'M': 'm', 'N': 'n', 'O': 'o',
-    'P': 'p', 'Q': 'q', 'R': 'r', 'S': 's', 'T': 't',
-    'U': 'u', 'V': 'v', 'W': 'w', 'X': 'x', 'Y': 'y', 'Z': 'z',
-}
-
 #----------------------------------- F I N D   I N F O R M A T I O N ----------------------------
 def find_group_info(data, level3_name):
     for level1_name, level2_groups in data.items():
@@ -366,43 +335,24 @@ def find_group_info(data, level3_name):
 
 
 #----------------------------------- H A N D L E   L E V E L 3 ----------------------------
-# Hàm xử lý kết quả (sẽ cập nhật sau theo yêu cầu bạn)
 # Hàm xử lý riêng cho phần tử đầu tiên
-def handle_first_item(result):
-    #--------Click P12--------------------
+def handle_first_item(result, P):
+    #--------Click Level 2--------------------
     time.sleep(5)
-    P12 = pyautogui.position()
-    time.sleep(1)
-    pyautogui.moveTo(P12)
-    pyautogui.click()
-    #-------------------------------------
-    #--------- Start----------------------
-    P13 = (P12[0] + 16, P12[1] + 26)
+    keyboard.send("add")
+    #--------Click Level 3--------------------
     time.sleep(2)
-    pyautogui.moveTo(P13)
-    pyautogui.click() 
+    pyautogui.press("down")
+    time.sleep(2)
+    keyboard.send("add")
     
-    #Click first
-    P13_1 =   (P13[0] + 249, P13[1] + 29) 
+    # Click properties
     time.sleep(2)
-    pyautogui.moveTo(P13_1)
-    pyautogui.doubleClick()
-    
-    time.sleep(2)
-    pyautogui.rightClick()
-    
-    time.sleep(2)
-    pyautogui.press('up')
+    pyautogui.press("down")
     time.sleep(1)
-    pyautogui.press('up')
-    time.sleep(1)
-    pyautogui.press('up')
-    time.sleep(1)
-    pyautogui.press('up')
-    time.sleep(1)
-    pyautogui.press('up')
-    time.sleep(1)
-    pyautogui.press('enter')
+    pyautogui.keyDown('ctrl')
+    pyautogui.press('a')
+    pyautogui.keyUp('ctrl')
     
     #------------------ Handle Status ------------------
     status_text = result.get("Status", "")
@@ -413,12 +363,13 @@ def handle_first_item(result):
     time.sleep(2)
     pyautogui.moveTo(P_status)
     pyautogui.click()
+    time.sleep(2)
 
     # Click vào lựa chọn Status tương ứng
-    P_status_new = (P_status[0], P_status[1] + status_offset)
-    time.sleep(2)
-    pyautogui.moveTo(P_status_new)
-    pyautogui.click()
+    for _ in range(status_offset):
+        pyautogui.press("down")
+        time.sleep(1)
+    pyautogui.press("Enter")
 
     #------------------ Handle Severity ------------------
     severity_text = result.get("Severity", "")
@@ -429,12 +380,13 @@ def handle_first_item(result):
     time.sleep(2)
     pyautogui.moveTo(P_severity)
     pyautogui.click()
+    time.sleep(2)
 
     # Click vào lựa chọn Severity tương ứng
-    P_severity_new = (P_severity[0], P_severity[1] + severity_offset)
-    time.sleep(2)
-    pyautogui.moveTo(P_severity_new)
-    pyautogui.click()    
+    for _ in range(severity_offset):
+        pyautogui.press("down")
+        time.sleep(1)
+    pyautogui.press("Enter")   
     
     #------------------ Handle Comment ------------------
     # Click vào ô Comment
@@ -444,133 +396,32 @@ def handle_first_item(result):
     
     time.sleep(2)
     comment_text = result.get("Comment", "")
-    safe_write(comment_text)
+    pyperclip.copy(comment_text)
+    pyautogui.hotkey("ctrl", "v")
     
-    #----------------Click P13--------------------------
+    #----------------Click default_area --------------------------
     time.sleep(2)
-    pyautogui.moveTo(P13)
+    pyautogui.moveTo(P)
     pyautogui.click()
-    
-    return P12, P13    
-     
-
-def handle_result(result, P13):
-    #--------- Start----------------------
-    P13 = (P13[0], P13[1] + 28)
-    time.sleep(2)
-    pyautogui.moveTo(P13)
-    pyautogui.click() 
-    
-    #Click first
-    P13_1 =   (P13[0] + 249, P13[1] + 29) 
-    time.sleep(2)
-    pyautogui.moveTo(P13_1)
-    pyautogui.doubleClick()
-    
-    time.sleep(2)
-    pyautogui.rightClick()
-    
-    time.sleep(2)
-    pyautogui.press('up')
     time.sleep(1)
-    pyautogui.press('up')
+    pyautogui.press("up")
     time.sleep(1)
-    pyautogui.press('up')
-    time.sleep(1)
-    pyautogui.press('up')
-    time.sleep(1)
-    pyautogui.press('up')
-    time.sleep(1)
-    pyautogui.press('enter')
-    
-    #------------------ Handle Status ------------------
-    status_text = result.get("Status", "")
-    status_offset = status_hierarchy.get(status_text, 0)  # default 0 nếu không tìm thấy
-    status_offset = int(status_offset)
-
-    # Click vào ô Status
-    time.sleep(2)
-    pyautogui.moveTo(P_status)
-    pyautogui.click()
-
-    # Click vào lựa chọn Status tương ứng
-    P_status_new = (P_status[0], P_status[1] + status_offset)
-    time.sleep(2)
-    pyautogui.moveTo(P_status_new)
-    pyautogui.click()
-
-    #------------------ Handle Severity ------------------
-    severity_text = result.get("Severity", "")
-    severity_offset = severity_hierarchy.get(severity_text, 0)
-    severity_offset = int(severity_offset)
-
-    # Click vào ô Severity
-    time.sleep(2)
-    pyautogui.moveTo(P_severity)
-    pyautogui.click()
-
-    # Click vào lựa chọn Severity tương ứng
-    P_severity_new = (P_severity[0], P_severity[1] + severity_offset)
-    time.sleep(2)
-    pyautogui.moveTo(P_severity_new)
-    pyautogui.click()    
-    
-    #------------------ Handle Comment ------------------
-    # Click vào ô Comment
-    time.sleep(2)
-    pyautogui.moveTo(P_comment)
-    pyautogui.click()    
-    
-    time.sleep(2)
-    comment_text = result.get("Comment", "")
-    safe_write(comment_text)
-    
-    #----------------Click P13--------------------------
-    time.sleep(2)
-    pyautogui.moveTo(P13)
-    pyautogui.click()   
-    
-    return P13
-
-def handle_first_item_next(result, P12):
-    #--------Close P12 old--------------------  
-    time.sleep(2)
-    pyautogui.moveTo(P12)
-    pyautogui.click()    
-    #--------Click P12--------------------
+    keyboard.send("subtract")
+   
+def handle_result(result, P):
+    #--------Click Level 2--------------------
     time.sleep(5)
-    P12 = (P12[0], P12[1] + 28)
+    pyautogui.press('down')
     time.sleep(1)
-    pyautogui.moveTo(P12)
-    pyautogui.click()
-    #-------------------------------------
-    #--------- Start----------------------
-    P13 = (P12[0] + 16, P12[1] + 26)
-    time.sleep(2)
-    pyautogui.moveTo(P13)
-    pyautogui.click() 
+    keyboard.send("add")
     
-    #Click first
-    P13_1 =   (P13[0] + 249, P13[1] + 29) 
+    # Click properties
     time.sleep(2)
-    pyautogui.moveTo(P13_1)
-    pyautogui.doubleClick()
-    
-    time.sleep(2)
-    pyautogui.rightClick()
-    
-    time.sleep(2)
-    pyautogui.press('up')
+    pyautogui.press("down")
     time.sleep(1)
-    pyautogui.press('up')
-    time.sleep(1)
-    pyautogui.press('up')
-    time.sleep(1)
-    pyautogui.press('up')
-    time.sleep(1)
-    pyautogui.press('up')
-    time.sleep(1)
-    pyautogui.press('enter')
+    pyautogui.keyDown('ctrl')
+    pyautogui.press('a')
+    pyautogui.keyUp('ctrl')
     
     #------------------ Handle Status ------------------
     status_text = result.get("Status", "")
@@ -581,12 +432,13 @@ def handle_first_item_next(result, P12):
     time.sleep(2)
     pyautogui.moveTo(P_status)
     pyautogui.click()
+    time.sleep(2)
 
     # Click vào lựa chọn Status tương ứng
-    P_status_new = (P_status[0], P_status[1] + status_offset)
-    time.sleep(2)
-    pyautogui.moveTo(P_status_new)
-    pyautogui.click()
+    for _ in range(status_offset):
+        pyautogui.press("down")
+        time.sleep(1)
+    pyautogui.press("Enter")
 
     #------------------ Handle Severity ------------------
     severity_text = result.get("Severity", "")
@@ -597,12 +449,13 @@ def handle_first_item_next(result, P12):
     time.sleep(2)
     pyautogui.moveTo(P_severity)
     pyautogui.click()
+    time.sleep(2)
 
     # Click vào lựa chọn Severity tương ứng
-    P_severity_new = (P_severity[0], P_severity[1] + severity_offset)
-    time.sleep(2)
-    pyautogui.moveTo(P_severity_new)
-    pyautogui.click()    
+    for _ in range(severity_offset):
+        pyautogui.press("down")
+        time.sleep(1)
+    pyautogui.press("Enter")   
     
     #------------------ Handle Comment ------------------
     # Click vào ô Comment
@@ -612,14 +465,18 @@ def handle_first_item_next(result, P12):
     
     time.sleep(2)
     comment_text = result.get("Comment", "")
-    safe_write(comment_text)
+    pyperclip.copy(comment_text)
+    pyautogui.hotkey("ctrl", "v")
     
-    #----------------Click P13--------------------------
+    #----------------Click default_area --------------------------
     time.sleep(2)
-    pyautogui.moveTo(P13)
+    pyautogui.moveTo(P)
     pyautogui.click()
-    
-    return P12, P13  
+    time.sleep(1)
+    pyautogui.press("up")
+    time.sleep(1)
+    keyboard.send("subtract")
+
 
 #----------------------------------- S U B   P R O G R A M ----------------------------
 # Thread giám sát phím ESC
@@ -633,26 +490,13 @@ def monitor_keyboard():
             os._exit(1)  # Dừng toàn bộ chương trình ngay lập tức
         time.sleep(0.1)
 
-# Ham go ki tu
-def safe_write(text, interval=0.01):
-    for char in text:
-        if char in string.ascii_uppercase or char in '"<>~)!@#$%^&*(':  # ký tự cần Shift
-            pyautogui.keyDown('shift')
-            pyautogui.press(shift_char_map.get(char, char.lower()))
-            pyautogui.keyUp('shift')
-        else:
-            pyautogui.press(char)
-        time.sleep(interval)
-
-
 
 #----------------------------------- M A I N   P R O G R A M ----------------------------
-
-# Vòng lặp nhập từ người dùng
 # Gọi thread ngay khi khởi chạy chương trình
 keyboard_thread = threading.Thread(target=monitor_keyboard, daemon=True)
 keyboard_thread.start()
 
+# Vòng lặp nhập từ người dùng
 while True:
     user_input = input("Nhập danh sách tên nhóm cấp 3 (cách nhau bởi dấu ',') hoặc 'exit': ").strip()
     if user_input.lower() == "exit":
@@ -664,12 +508,23 @@ while True:
         result = find_group_info(data_hierarchy, level3_name)
         if result:
             if i == 0:
+                time.sleep(3)
+                level1_compare = result["Level1"]
                 level2_compare = result["Level2"]
-                P12, P13 = handle_first_item(result)
-            elif level2_compare == result["Level2"]:
-                P13 = handle_result(result, P13)
+                handle_first_item(result, P)
+            elif level1_compare == result["Level1"] and level2_compare == result["Level2"]:
+                handle_result(result, P)
+            elif level1_compare == result["Level1"] and level2_compare != result["Level2"]:
+                pyautogui.press("down")
+                level2_compare = result["Level2"]
+                handle_first_item(result, P)      
             else:
+                time.sleep(1)
+                pyautogui.press("down")
+                time.sleep(1)
+                pyautogui.press("down")
+                level1_compare = result["Level1"]
                 level2_compare = result["Level2"]
-                P12, P13 = handle_first_item_next(result, P12)
+                handle_first_item(result, P)
         else:
             print(f"⚠️ Không tìm thấy nhóm cấp 3: {level3_name}")
